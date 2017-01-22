@@ -9,9 +9,8 @@
 import GLKit
 import OpenGLES
 
-func BUFFER_OFFSET(i: Int) -> UnsafePointer<Void> {
-    let p: UnsafePointer<Void> = nil
-    return p.advancedBy(i)
+func BUFFER_OFFSET(_ i: Int) -> UnsafeRawPointer? {
+    return UnsafeRawPointer(bitPattern: i)
 }
 
 class GameViewController: GLKViewController {
@@ -37,21 +36,19 @@ class GameViewController: GLKViewController {
     var rotation: Float = 0.0
     
     deinit {
-        
         tearDownGL()
         
-        if EAGLContext.currentContext() === context {
-            EAGLContext.setCurrentContext(nil)
+        if EAGLContext.current() === context {
+            EAGLContext.setCurrent(nil)
         }
     }
     
     override func viewDidLoad() {
-        
         super.viewDidLoad()
         
-        print("viewDidLoad")
+        print("GameViewController - viewDidLoad")
         
-        context = EAGLContext(API: .OpenGLES2)
+        context = EAGLContext(api: .openGLES2)
         
         if !(context != nil) {
             print("Failed to create ES context")
@@ -59,35 +56,32 @@ class GameViewController: GLKViewController {
         
         let view = self.view as! GLKView
         view.context = context!
-        view.drawableDepthFormat = .Format24
+        view.drawableDepthFormat = .format24
         
         setupGL()
     }
     
     override func didReceiveMemoryWarning() {
-        
         super.didReceiveMemoryWarning()
         
-        if isViewLoaded() && (view.window != nil) {
+        if isViewLoaded && (view.window != nil) {
             view = nil
             
             tearDownGL()
             
-            if EAGLContext.currentContext() === context {
-                EAGLContext.setCurrentContext(nil)
+            if EAGLContext.current() === context {
+                EAGLContext.setCurrent(nil)
             }
             context = nil
         }
     }
     
-    override func prefersStatusBarHidden () -> Bool {
-        
+    override var prefersStatusBarHidden  : Bool {
         return true
     }
     
     func setupGL() {
-        
-        EAGLContext.setCurrentContext(context)
+        EAGLContext.setCurrent(context)
         
         preferredFramesPerSecond = 60
         
@@ -96,10 +90,10 @@ class GameViewController: GLKViewController {
         glBlendFunc(GLenum(GL_SRC_ALPHA), GLenum(GL_ONE_MINUS_SRC_ALPHA))
         
         glTextA = GLText()
-        glTextA!.load(FONTNAME[3], 24, 2, 2)
+        let _ = glTextA!.load(FONTNAME[3], 24, 2, 2)
         
         glTextB = GLText()
-        glTextB!.load(FONTNAME[0], 40, 2, 2)
+        let _ = glTextB!.load(FONTNAME[0], 40, 2, 2)
         
         bgImage = BackgroundImage()
         
@@ -123,8 +117,7 @@ class GameViewController: GLKViewController {
     }
     
     func tearDownGL() {
-        
-        EAGLContext.setCurrentContext(context)
+        EAGLContext.setCurrent(context)
         
         glTextA!.cleanUp()
         glTextB!.cleanUp()
@@ -134,12 +127,10 @@ class GameViewController: GLKViewController {
     // MARK: - GLKView and GLKViewController delegate methods
     
     func update() {
-        
         rotation += Float(timeSinceLastUpdate * 30)
     }
     
-    override func glkView(view: GLKView, drawInRect rect: CGRect) {
-        
+    override func glkView(_ view: GLKView, drawIn rect: CGRect) {
         glClear(GLbitfield(GL_COLOR_BUFFER_BIT) | GLbitfield(GL_DEPTH_BUFFER_BIT))
         
         bgImage!.draw(&pvMatrix)
@@ -157,13 +148,13 @@ class GameViewController: GLKViewController {
         glTextA!.end()
         
         glTextB!.begin(0.0, 1.0, 0.0, 1.0, textPVMatrix)
-        glTextB!.drawC("Test String 3D!", 0, 0, 10, 0, -30, 0)
+        let _ = glTextB!.drawC("Test String 3D!", 0, 0, 10, 0, -30, 0)
         glTextB!.draw("More Lines...", -100, -200)
         glTextB!.draw("The End.", -150, -200 + glTextB!.getCharHeight(), 180)
         glTextB!.end()
         
         glTextB!.begin(1.0, 0.0, 0.0, 1.0, textPVMatrix)
-        glTextB!.drawC("Rotating Text", -50, -250, 0, 0, 0, rotation)
+        let _ = glTextB!.drawC("Rotating Text", -50, -250, 0, 0, 0, rotation)
         glTextB!.end()
     }
 }

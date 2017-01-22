@@ -33,7 +33,6 @@ class Image {
         Setup resources.
      */
     func setupData() {
-        
         let vertexShaderCode =
             "uniform mat4 uMVPMatrix;" +
                 "attribute vec4 aPosition;" +
@@ -64,17 +63,17 @@ class Image {
         
         glGenBuffers(1, &vertexBuffer)
         glBindBuffer(GLenum(GL_ARRAY_BUFFER), vertexBuffer)
-        glBufferData(GLenum(GL_ARRAY_BUFFER), GLsizeiptr(sizeof(GLfloat) * verticesData.count), &verticesData, GLenum(GL_STATIC_DRAW))
+        glBufferData(GLenum(GL_ARRAY_BUFFER), GLsizeiptr(MemoryLayout<GLfloat>.size * verticesData.count), &verticesData, GLenum(GL_STATIC_DRAW))
         
         let indicesData: [GLushort] = [ 0, 1, 2, 0, 2, 3 ]
         glGenBuffers(1, &indexBuffer)
         glBindBuffer(GLenum(GL_ELEMENT_ARRAY_BUFFER), indexBuffer)
-        glBufferData(GLenum(GL_ELEMENT_ARRAY_BUFFER), GLsizeiptr(sizeof(GLushort) * indicesData.count), indicesData, GLenum(GL_STATIC_DRAW))
+        glBufferData(GLenum(GL_ELEMENT_ARRAY_BUFFER), GLsizeiptr(MemoryLayout<GLushort>.size * indicesData.count), indicesData, GLenum(GL_STATIC_DRAW))
         
-        glEnableVertexAttribArray(GLuint(GLKVertexAttrib.Position.rawValue))
-        glVertexAttribPointer(GLuint(GLKVertexAttrib.Position.rawValue), 3, GLenum(GL_FLOAT), GLboolean(GL_FALSE), 20, BUFFER_OFFSET(0))
-        glEnableVertexAttribArray(GLuint(GLKVertexAttrib.TexCoord0.rawValue))
-        glVertexAttribPointer(GLuint(GLKVertexAttrib.TexCoord0.rawValue), 2, GLenum(GL_FLOAT), GLboolean(GL_FALSE), 20, BUFFER_OFFSET(12))
+        glEnableVertexAttribArray(GLuint(GLKVertexAttrib.position.rawValue))
+        glVertexAttribPointer(GLuint(GLKVertexAttrib.position.rawValue), 3, GLenum(GL_FLOAT), GLboolean(GL_FALSE), 20, BUFFER_OFFSET(0))
+        glEnableVertexAttribArray(GLuint(GLKVertexAttrib.texCoord0.rawValue))
+        glVertexAttribPointer(GLuint(GLKVertexAttrib.texCoord0.rawValue), 2, GLenum(GL_FLOAT), GLboolean(GL_FALSE), 20, BUFFER_OFFSET(12))
         
         glBindVertexArrayOES(0)
     }
@@ -85,8 +84,7 @@ class Image {
         - Parameters:
         - mvpMatrix: the Model View Projection matrix to position image
      */
-    func draw(inout mvpMatrix: GLKMatrix4) {
-        
+    func draw(_ mvpMatrix: inout GLKMatrix4) {
         glBindVertexArrayOES(vertexArray)
         
         glUseProgram(program)
@@ -97,8 +95,10 @@ class Image {
             glUniform1i(samplerLocation, 0)
         }
         
-        withUnsafePointer(&mvpMatrix, {
-            glUniformMatrix4fv(mvpMatrixLocation, 1, 0, UnsafePointer($0))
+        withUnsafePointer(to: &mvpMatrix, {
+            $0.withMemoryRebound(to: Float.self, capacity: 16, {
+                glUniformMatrix4fv(mvpMatrixLocation, 1, 0, $0)
+            })
         })
         
         glDrawElements(GLenum(GL_TRIANGLES), 6, GLenum(GL_UNSIGNED_SHORT), BUFFER_OFFSET(0))
@@ -108,7 +108,6 @@ class Image {
         Cleanup any resources.
      */
     func cleanUp() {
-        
         if let texInfo = textureInfo {
             var name = texInfo.name
             glDeleteTextures(1, &name)
@@ -143,13 +142,12 @@ class Image {
         - type: Type of texture file.
         - Returns: GLKTextureInfo object or nil if error occurs
      */
-    func loadTexture(file: String, _ type: String) -> GLKTextureInfo? {
-        
-        let imagePathname = NSBundle.mainBundle().pathForResource(file, ofType: type)!
+    func loadTexture(_ file: String, _ type: String) -> GLKTextureInfo? {
+        let imagePathname = Bundle.main.path(forResource: file, ofType: type)!
         
         var textureInfo: GLKTextureInfo? = nil
         do {
-            try textureInfo = GLKTextureLoader.textureWithContentsOfFile(imagePathname, options: [:])
+            try textureInfo = GLKTextureLoader.texture(withContentsOfFile: imagePathname, options: [:])
         } catch {
             print("Could not create texture info for image [reason: ", error, "]")
         }
@@ -166,11 +164,10 @@ class Image {
         - image: UIImage object.
         - Returns: GLKTextureInfo object or nil if error occurs
      */
-    func loadTexture(image: UIImage) -> GLKTextureInfo? {
-        
+    func loadTexture(_ image: UIImage) -> GLKTextureInfo? {
         var textureInfo: GLKTextureInfo? = nil
         do {
-            try textureInfo = GLKTextureLoader.textureWithCGImage(image.CGImage!, options: [:])
+            try textureInfo = GLKTextureLoader.texture(with: image.cgImage!, options: [:])
         } catch {
             print("Could not create texture info for image [reason: ", error, "]")
         }
@@ -187,11 +184,10 @@ class Image {
      - data: NSData object.
      - Returns: GLKTextureInfo object or nil if error occurs
      */
-    func loadTexture(data: NSData) -> GLKTextureInfo? {
-        
+    func loadTexture(_ data: Data) -> GLKTextureInfo? {
         var textureInfo: GLKTextureInfo? = nil
         do {
-            try textureInfo = GLKTextureLoader.textureWithContentsOfData(data, options: [:])
+            try textureInfo = GLKTextureLoader.texture(withContentsOf: data, options: [:])
         } catch {
             print("Could not create texture info for data [reason: ", error, "]")
         }
@@ -201,15 +197,14 @@ class Image {
         return texInfo
     }
     
-    func validateProgram(prog: GLuint) -> Bool {
-        
+    func validateProgram(_ prog: GLuint) -> Bool {
         var logLength: GLsizei = 0
         var status: GLint = 0
         
         glValidateProgram(prog)
         glGetProgramiv(prog, GLenum(GL_INFO_LOG_LENGTH), &logLength)
         if logLength > 0 {
-            var log: [GLchar] = [GLchar](count: Int(logLength), repeatedValue: 0)
+            var log: [GLchar] = [GLchar](repeating: 0, count: Int(logLength))
             glGetProgramInfoLog(prog, logLength, &logLength, &log)
             print("Program validate log: \n\(log)")
         }
@@ -231,8 +226,7 @@ class Image {
         - fShaderCode: Fragment shader as string.
         - Returns: Program id of created program or 0 if error occurs.
      */
-    func loadProgram(vShaderCode: String, _ fShaderCode: String) -> GLuint {
-        
+    func loadProgram(_ vShaderCode: String, _ fShaderCode: String) -> GLuint {
         var program: GLuint = 0
         var vertShader: GLuint = 0
         var fragShader: GLuint = 0
@@ -261,8 +255,8 @@ class Image {
         
         // Bind attribute locations.
         // This needs to be done prior to linking.
-        glBindAttribLocation(program, GLuint(GLKVertexAttrib.Position.rawValue), "aPosition")
-        glBindAttribLocation(program, GLuint(GLKVertexAttrib.TexCoord0.rawValue), "aTexCoord")
+        glBindAttribLocation(program, GLuint(GLKVertexAttrib.position.rawValue), "aPosition")
+        glBindAttribLocation(program, GLuint(GLKVertexAttrib.texCoord0.rawValue), "aTexCoord")
         
         glLinkProgram(program)
         
@@ -271,10 +265,9 @@ class Image {
             var logLength: GLint = 0
             glGetProgramiv(program, GLenum(GL_INFO_LOG_LENGTH), &logLength)
             if logLength > 0 {
-                let log = UnsafeMutablePointer<GLchar>(malloc(Int(logLength)))
-                glGetProgramInfoLog(program, logLength, &logLength, log)
+                var log: [GLchar] = [GLchar](repeating: 0, count: Int(logLength))
+                glGetProgramInfoLog(program, logLength, &logLength, &log)
                 print("Program link log: ", log)
-                free(log)
             }
             
             glDeleteProgram(program)
@@ -301,8 +294,7 @@ class Image {
         - shaderCode: The shader code.
         - Returns: Shader id of created shader or 0 if error occurs.
      */
-    func loadShader(type: GLenum, _ shaderCode: String) -> GLuint {
-        
+    func loadShader(_ type: GLenum, _ shaderCode: String) -> GLuint {
         var shader: GLuint = 0
         var status: GLint = 0
         
@@ -311,7 +303,7 @@ class Image {
             return 0
         }
         
-        var shaderCodeSource = (shaderCode as NSString).UTF8String
+        var shaderCodeSource = (shaderCode as NSString).utf8String
         glShaderSource(shader, GLsizei(1), &shaderCodeSource, nil)
         glCompileShader(shader)
         
@@ -321,10 +313,9 @@ class Image {
             var logLength: GLint = 0
             glGetShaderiv(shader, GLenum(GL_INFO_LOG_LENGTH), &logLength)
             if logLength > 0 {
-                let log = UnsafeMutablePointer<GLchar>(malloc(Int(logLength)))
-                glGetShaderInfoLog(shader, logLength, &logLength, log)
+                var log: [GLchar] = [GLchar](repeating: 0, count: Int(logLength))
+                glGetShaderInfoLog(shader, logLength, &logLength, &log)
                 print("Shader compile log: ", log)
-                free(log)
             }
             
             glDeleteShader(shader)

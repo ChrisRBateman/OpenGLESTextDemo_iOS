@@ -11,25 +11,22 @@ import OpenGLES
 
 class Program {
     
-    private var programHandle: GLuint = 0
-    private var vertexShaderHandle: GLuint = 0
-    private var fragmentShaderHandle: GLuint = 0
-    private var mInitialized: Bool
+    fileprivate var programHandle: GLuint = 0
+    fileprivate var vertexShaderHandle: GLuint = 0
+    fileprivate var fragmentShaderHandle: GLuint = 0
+    fileprivate var mInitialized: Bool
  
     init() {
-        
         mInitialized = false
     }
     
     func initialize() {
-        
         initialize(nil, nil, nil)
     }
     
-    func initialize(vertexShaderCode: String?,
+    func initialize(_ vertexShaderCode: String?,
                     _ fragmentShaderCode: String?,
                     _ programVariables: [AttribVariable]?) {
-        
 		vertexShaderHandle = Utilities.loadShader(GLenum(GL_VERTEX_SHADER), vertexShaderCode!)
 		fragmentShaderHandle = Utilities.loadShader(GLenum(GL_FRAGMENT_SHADER), fragmentShaderCode!)
 		
@@ -39,12 +36,10 @@ class Program {
 	}
     
     func getHandle() -> GLuint {
-        
         return programHandle
     }
     
     func delete() {
-        
         glDeleteShader(vertexShaderHandle)
         glDeleteShader(fragmentShaderHandle)
         glDeleteProgram(programHandle)
@@ -52,7 +47,6 @@ class Program {
     }
     
     func initialized() -> Bool {
-        
         return mInitialized
     }
 }

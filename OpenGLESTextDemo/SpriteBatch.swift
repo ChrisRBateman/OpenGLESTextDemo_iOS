@@ -19,9 +19,9 @@ class SpriteBatch {
     var bufferIndex: Int
     var maxSprites: Int
     var numSprites: Int
-    private var mVPMatrix: GLKMatrix4 = GLKMatrix4Identity
-    private var uMVPMatrices: [Float] = Array<Float>(count: GLText.CHAR_BATCH_SIZE * 16, repeatedValue: 0)
-    private var mMVPMatricesHandle: Int32
+    fileprivate var mVPMatrix: GLKMatrix4 = GLKMatrix4Identity
+    fileprivate var uMVPMatrices: [Float] = Array<Float>(repeating: 0, count: GLText.CHAR_BATCH_SIZE * 16)
+    fileprivate var mMVPMatricesHandle: Int32
     var mMVPMatrix: GLKMatrix4 = GLKMatrix4Identity
     
     /**
@@ -32,17 +32,16 @@ class SpriteBatch {
         - program:    program to use when drawing
      */
     init(_ maxSprites: Int, _ program: Program) {
-        
-        vertexBuffer = Array<Float>(count: maxSprites * SpriteBatch.VERTICES_PER_SPRITE * SpriteBatch.VERTEX_SIZE, repeatedValue: 0)
+        vertexBuffer = Array<Float>(repeating: 0, count: maxSprites * SpriteBatch.VERTICES_PER_SPRITE * SpriteBatch.VERTEX_SIZE)
         vertices = Vertices(maxSprites * SpriteBatch.VERTICES_PER_SPRITE, maxSprites * SpriteBatch.INDICES_PER_SPRITE)
         bufferIndex = 0
         self.maxSprites = maxSprites
         numSprites = 0
         
-        var indices = Array<GLushort>(count: maxSprites * SpriteBatch.INDICES_PER_SPRITE, repeatedValue: 0)
+        var indices = Array<GLushort>(repeating: 0, count: maxSprites * SpriteBatch.INDICES_PER_SPRITE)
         let len = indices.count
         var j: GLushort = 0
-        for i in 0.stride(to: len, by: SpriteBatch.INDICES_PER_SPRITE) {
+        for i in stride(from: 0, to: len, by: SpriteBatch.INDICES_PER_SPRITE) {
             indices[i + 0] = (j + 0)           	// Calculate Index 0
             indices[i + 1] = (j + 1)           	// Calculate Index 1
             indices[i + 2] = (j + 2)           	// Calculate Index 2
@@ -59,12 +58,10 @@ class SpriteBatch {
     }
     
     func cleanUp() {
-        
         vertices!.cleanUp()
     }
     
-    func beginBatch(vpMatrix: GLKMatrix4) {
-        
+    func beginBatch(_ vpMatrix: GLKMatrix4) {
         numSprites = 0
         bufferIndex = 0
         mVPMatrix = vpMatrix
@@ -75,7 +72,6 @@ class SpriteBatch {
         Signal the end of a batch. render the batched sprites.
      */
     func endBatch() {
-        
         if numSprites > 0 {
             glUniformMatrix4fv(mMVPMatricesHandle, GLsizei(numSprites), 0, &uMVPMatrices)
             
@@ -99,8 +95,7 @@ class SpriteBatch {
         - region:        the texture region to use for sprite
         - modelMatrix:   the model matrix to assign to the sprite
      */
-    func drawSprite(x: Float, _ y: Float, _ width: Float, _ height: Float, _ region: TextureRegion, _ modelMatrix: GLKMatrix4) {
-        
+    func drawSprite(_ x: Float, _ y: Float, _ width: Float, _ height: Float, _ region: TextureRegion, _ modelMatrix: GLKMatrix4) {
         if numSprites == maxSprites {
             endBatch()
             numSprites = 0

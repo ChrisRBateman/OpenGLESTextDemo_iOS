@@ -11,8 +11,7 @@ import OpenGLES
 
 class Utilities {
     
-    static func createProgram(vertexShaderHandle: GLuint, _ fragmentShaderHandle: GLuint, _ variables: [AttribVariable]) -> GLuint {
-    
+    static func createProgram(_ vertexShaderHandle: GLuint, _ fragmentShaderHandle: GLuint, _ variables: [AttribVariable]) -> GLuint {
         let mProgram = glCreateProgram()
     
         if mProgram != 0 {
@@ -31,10 +30,9 @@ class Utilities {
                 var logLength: GLint = 0
                 glGetProgramiv(mProgram, GLenum(GL_INFO_LOG_LENGTH), &logLength)
                 if logLength > 0 {
-                    let log = UnsafeMutablePointer<GLchar>(malloc(Int(logLength)))
-                    glGetProgramInfoLog(mProgram, logLength, &logLength, log)
+                    var log: [GLchar] = [GLchar](repeating: 0, count: Int(logLength))
+                    glGetProgramInfoLog(mProgram, logLength, &logLength, &log)
                     print("Program link log: ", log)
-                    free(log)
                 }
                 
                 glDeleteProgram(mProgram)
@@ -54,12 +52,11 @@ class Utilities {
         return mProgram
     }
     
-    static func loadShader(type: GLenum, _ shaderCode: String) -> GLuint {
-        
+    static func loadShader(_ type: GLenum, _ shaderCode: String) -> GLuint {
         let shaderHandle = glCreateShader(type)
     
         if shaderHandle != 0 {
-            var shaderCodeSource = (shaderCode as NSString).UTF8String
+            var shaderCodeSource = (shaderCode as NSString).utf8String
             glShaderSource(shaderHandle, GLsizei(1), &shaderCodeSource, nil)
             glCompileShader(shaderHandle)
             
@@ -71,10 +68,9 @@ class Utilities {
                 var logLength: GLint = 0
                 glGetShaderiv(shaderHandle, GLenum(GL_INFO_LOG_LENGTH), &logLength)
                 if logLength > 0 {
-                    let log = UnsafeMutablePointer<GLchar>(malloc(Int(logLength)))
-                    glGetShaderInfoLog(shaderHandle, logLength, &logLength, log)
+                    var log: [GLchar] = [GLchar](repeating: 0, count: Int(logLength))
+                    glGetShaderInfoLog(shaderHandle, logLength, &logLength, &log)
                     print("Shader compile log: ", log)
-                    free(log)
                 }
                 
                 glDeleteShader(shaderHandle)

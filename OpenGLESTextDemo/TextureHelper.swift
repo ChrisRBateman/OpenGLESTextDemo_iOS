@@ -17,11 +17,10 @@ class TextureHelper {
         - image: UIImage object.
         - Returns: GLKTextureInfo object or nil if error occurs
      */
-    static func loadTexture(image: UIImage) -> GLKTextureInfo? {
-        
+    static func loadTexture(_ image: UIImage) -> GLKTextureInfo? {
         var textureInfo: GLKTextureInfo? = nil
         do {
-            try textureInfo = GLKTextureLoader.textureWithCGImage(image.CGImage!, options: [:])
+            try textureInfo = GLKTextureLoader.texture(with: image.cgImage!, options: [:])
         } catch {
             print("Could not create texture info for image [reason: ", error, "]")
         }

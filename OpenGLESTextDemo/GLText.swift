@@ -11,19 +11,19 @@ import OpenGLES
 
 class GLText {
     
-    private static let CHAR_START = 32
-    private static let CHAR_END = 126
-    private static let CHAR_CNT = (((CHAR_END - CHAR_START) + 1) + 1)
+    fileprivate static let CHAR_START = 32
+    fileprivate static let CHAR_END = 126
+    fileprivate static let CHAR_CNT = (((CHAR_END - CHAR_START) + 1) + 1)
     
-    private static let CHAR_NONE = 32
-    private static let CHAR_UNKNOWN = (CHAR_CNT - 1)
+    fileprivate static let CHAR_NONE = 32
+    fileprivate static let CHAR_UNKNOWN = (CHAR_CNT - 1)
     
-    private static let FONT_SIZE_MIN = 6
-    private static let FONT_SIZE_MAX = 180
+    fileprivate static let FONT_SIZE_MIN = 6
+    fileprivate static let FONT_SIZE_MAX = 180
     
     static let CHAR_BATCH_SIZE = 24
     
-    private var batch: SpriteBatch? = nil
+    fileprivate var batch: SpriteBatch? = nil
     
     var fontPadX, fontPadY: Int
     
@@ -45,12 +45,11 @@ class GLText {
     var scaleX, scaleY: Float
     var spaceX: Float
     
-    private var mProgram: Program? = nil
-    private var mColorHandle: GLint = 0
-    private var mTextureUniformHandle: Int32 = 0
+    fileprivate var mProgram: Program? = nil
+    fileprivate var mColorHandle: GLint = 0
+    fileprivate var mTextureUniformHandle: Int32 = 0
     
     init(program: Program? = nil) {
-        
         if program == nil {
             mProgram = BatchTextProgram()
             mProgram?.initialize()
@@ -96,10 +95,12 @@ class GLText {
         - padX, padY: Extra padding per character (X+Y Axis); to prevent overlapping characters.
         - Returns:    true if successful; otherwise false
      */
-    func load(file: String, _ size: Int, _ padX: Int, _ padY: Int) -> Bool {
-        
+    func load(_ file: String, _ size: Int, _ padX: Int, _ padY: Int) -> Bool {
         fontPadX = padX
         fontPadY = padY
+        
+        print("font name : ", file)
+        print("font size : ", size)
         
         // load the font
         let font = UIFont(name: file, size: CGFloat(size))
@@ -114,9 +115,8 @@ class GLText {
         charWidthMax = 0
         charHeight = 0
         for c in GLText.CHAR_START..<GLText.CHAR_END + 1 {
-            let s = String(UnicodeScalar(c))
-            
-            var width = Float((s as NSString).sizeWithAttributes([NSFontAttributeName: font!]).width)
+            let s = String(Character(UnicodeScalar(c)!))
+            var width = Float(s.size(attributes: [NSFontAttributeName: font!]).width)
             width = ceilf(width)
         
             charWidths.append(width)
@@ -125,8 +125,8 @@ class GLText {
             }
         }
         
-        var s = String(UnicodeScalar(GLText.CHAR_NONE))
-        var width = Float((s as NSString).sizeWithAttributes([NSFontAttributeName: font!]).width)
+        var s = String(Character(UnicodeScalar(GLText.CHAR_NONE)!))
+        var width = Float(s.size(attributes: [NSFontAttributeName: font!]).width)
         width = ceilf(width)
         charWidths.append(width)
         if width > charWidthMax {
@@ -140,6 +140,7 @@ class GLText {
         cellWidth = Int(charWidthMax) + (2 * fontPadX)
         cellHeight = Int(charHeight) + (2 * fontPadY)
         let maxSize = cellWidth > cellHeight ? cellWidth : cellHeight
+        
         if maxSize < GLText.FONT_SIZE_MIN || maxSize > GLText.FONT_SIZE_MAX {
             return false
         }
@@ -164,27 +165,26 @@ class GLText {
         
         // create an empty bitmap
         let colorSpace = CGColorSpaceCreateDeviceGray()
-        let bitmapInfo = CGBitmapInfo.AlphaInfoMask.rawValue & CGImageAlphaInfo.Only.rawValue
-        let context = CGBitmapContextCreate(nil, textureSize, textureSize, 8, textureSize, colorSpace, bitmapInfo)
+        let bitmapInfo = CGBitmapInfo.alphaInfoMask.rawValue & CGImageAlphaInfo.alphaOnly.rawValue
+        let context = CGContext(data: nil, width: textureSize, height: textureSize, bitsPerComponent: 8, bytesPerRow: textureSize, space: colorSpace, bitmapInfo: bitmapInfo)
         
-        CGContextSetAllowsAntialiasing(context, true)
+        context?.setAllowsAntialiasing(true)
         
         // Move 0,0 to top left corner, flip y axis
-        CGContextTranslateCTM(context, 0, CGFloat(textureSize))
-        CGContextScaleCTM(context, 1, -1)
+        context?.translateBy(x: 0, y: CGFloat(textureSize))
+        context?.scaleBy(x: 1, y: -1)
         
-        CGContextSetRGBFillColor(context, 0, 0, 0, 0)
-        CGContextFillRect(context, CGRectMake(0, 0, CGFloat(textureSize), CGFloat(textureSize)))
+        context?.setFillColor(red: 0, green: 0, blue: 0, alpha: 0)
+        context?.fill(CGRect(x: 0, y: 0, width: CGFloat(textureSize), height: CGFloat(textureSize)))
         
-        CGContextSetRGBFillColor(context, 1, 1, 1, 1)
+        context?.setFillColor(red: 1, green: 1, blue: 1, alpha: 1)
         
         // render each of the characters to the bitmap (ie. build the font map)
         let fontRef = CTFontCreateWithName(font!.fontName as CFString, font!.pointSize, nil)
         var x: Float = Float(fontPadX)
         var y: Float = Float(fontAscent) + Float(fontPadY)
         for c in GLText.CHAR_START..<GLText.CHAR_END + 1 {
-            
-            let s = String(UnicodeScalar(c))
+            let s = String(Character(UnicodeScalar(c)!))
             drawChar(context!, fontRef, s, CGFloat(x), CGFloat(y))
             
             x += Float(cellWidth)
@@ -193,16 +193,19 @@ class GLText {
                 y += Float(cellHeight)
             }
         }
-        s = String(UnicodeScalar(GLText.CHAR_NONE))
+        s = String(Character(UnicodeScalar(GLText.CHAR_NONE)!))
         drawChar(context!, fontRef, s, CGFloat(x), CGFloat(y))
         
-        let contextImage = CGBitmapContextCreateImage(context)
-        let fontImage: UIImage? = UIImage(CGImage: contextImage!)
+        let contextImage = context?.makeImage()
+        let fontImage: UIImage? = UIImage(cgImage: contextImage!)
         
         // save the bitmap in a texture
         textureInfo = TextureHelper.loadTexture(fontImage!)
         
-        print("textureInfo : [", textureInfo, "]")
+        print("textureInfo.name   : ", textureInfo!.name)
+        print("textureInfo.target : ", textureInfo!.target)
+        print("textureInfo.width  : ", textureInfo!.width)
+        print("textureInfo.height : ", textureInfo!.height)
         
         // setup the array of character texture regions
         x = 0
@@ -232,24 +235,20 @@ class GLText {
         - alpha:            optional alpha value for font (default = 1.0)
         - vpMatrix:         View and projection matrix to use
      */
-    func begin(vpMatrix: GLKMatrix4) {
-        
+    func begin(_ vpMatrix: GLKMatrix4) {
         begin(1.0, 1.0, 1.0, 1.0, vpMatrix)
     }
     
-    func begin(alpha: Float, _ vpMatrix: GLKMatrix4) {
-        
+    func begin(_ alpha: Float, _ vpMatrix: GLKMatrix4) {
         begin(1.0, 1.0, 1.0, alpha, vpMatrix)
     }
     
-    func begin(red: Float, _ green: Float, _ blue: Float, _ alpha: Float, _ vpMatrix: GLKMatrix4) {
-        
+    func begin(_ red: Float, _ green: Float, _ blue: Float, _ alpha: Float, _ vpMatrix: GLKMatrix4) {
         initDraw(red, green, blue, alpha)
         batch!.beginBatch(vpMatrix)
     }
     
     func end() {
-        
         batch!.endBatch()
     }
     
@@ -262,8 +261,7 @@ class GLText {
         - x, y, z:  the x, y, z position to draw text at (bottom left of text; including descent)
         - angleDeg: angle to rotate the text
      */
-    func draw(text: String, _ x: Float, _ y: Float, _ z: Float, _ angleDegX: Float, _ angleDegY: Float, _ angleDegZ: Float) {
-        
+    func draw(_ text: String, _ x: Float, _ y: Float, _ z: Float, _ angleDegX: Float, _ angleDegY: Float, _ angleDegZ: Float) {
         let chrHeight = Float(cellHeight) * scaleY
         let chrWidth = Float(cellWidth) * scaleX
         let len = text.characters.count
@@ -282,27 +280,26 @@ class GLText {
         
         let text1 = text as NSString
         for i in 0..<len {
-            var c = Int(text1.characterAtIndex(i)) - GLText.CHAR_START
+            var c = Int(text1.character(at: i)) - GLText.CHAR_START
+            
             if c < 0 || c >= GLText.CHAR_CNT {
                 c = GLText.CHAR_UNKNOWN
             }
+            
             batch?.drawSprite(letterX, letterY, chrWidth, chrHeight, charRgn[c], modelMatrix)
             letterX += (charWidths[c] + spaceX) * scaleX
         }
     }
     
-    func draw(text: String, _ x: Float, _ y: Float, _ z: Float, _ angleDegZ: Float) {
-        
+    func draw(_ text: String, _ x: Float, _ y: Float, _ z: Float, _ angleDegZ: Float) {
         draw(text, x, y, z, 0, 0, angleDegZ)
     }
     
-    func draw(text: String, _ x: Float, _ y: Float, _ angleDegZ: Float) {
-        
+    func draw(_ text: String, _ x: Float, _ y: Float, _ angleDegZ: Float) {
         draw(text, x, y, 0, angleDegZ)
     }
     
-    func draw(text: String, _ x: Float, _ y: Float) {
-        
+    func draw(_ text: String, _ x: Float, _ y: Float) {
         draw(text, x, y, 0, 0)
     }
     
@@ -316,39 +313,33 @@ class GLText {
         - angleDeg: angle to rotate the text
         - Returns:    the total width of the text that was drawn
      */
-    func drawC(text: String, _ x: Float, _ y: Float, _ z: Float,
+    func drawC(_ text: String, _ x: Float, _ y: Float, _ z: Float,
                _ angleDegX: Float, _ angleDegY: Float, _ angleDegZ: Float) -> Float {
-        
         let len: Float = getLength(text)
         draw(text, x - (len / 2.0), y - (getCharHeight() / 2.0), z, angleDegX, angleDegY, angleDegZ)
         return len
     }
     
-    func drawC(text: String, _ x: Float, _ y: Float, _ z: Float, _ angleDegZ: Float) -> Float {
-    
+    func drawC(_ text: String, _ x: Float, _ y: Float, _ z: Float, _ angleDegZ: Float) -> Float {
         return drawC(text, x, y, z, 0, 0, angleDegZ)
     }
     
-    func drawC(text: String, _ x: Float, _ y: Float, _ angleDeg: Float) -> Float {
-        
+    func drawC(_ text: String, _ x: Float, _ y: Float, _ angleDeg: Float) -> Float {
         return drawC(text, x, y, 0, angleDeg)
     }
     
-    func drawC(text: String, _ x: Float, _ y: Float) -> Float {
-        
+    func drawC(_ text: String, _ x: Float, _ y: Float) -> Float {
         let len: Float = getLength(text)
         return drawC(text, x - (len / 2.0), y - (getCharHeight() / 2.0), 0)
     }
     
-    func drawCX(text: String, _ x: Float, _ y: Float) -> Float {
-        
+    func drawCX(_ text: String, _ x: Float, _ y: Float) -> Float {
         let len: Float = getLength(text)
         draw(text, x - (len / 2.0), y)
         return len
     }
     
-    func drawCY(text: String , _ x: Float, _ y: Float) {
-        
+    func drawCY(_ text: String , _ x: Float, _ y: Float) {
         draw(text, x, y - (getCharHeight() / 2.0))
     }
     
@@ -360,14 +351,12 @@ class GLText {
         - scale:  uniform scale for both x and y axis scaling
         - sx, sy: separate x and y axis scaling factors
      */
-    func setScale(scale: Float) {
-        
+    func setScale(_ scale: Float) {
         scaleX = scale
         scaleY = scale
     }
     
-    func setScale(sx: Float, _ sy: Float) {
-        
+    func setScale(_ sx: Float, _ sy: Float) {
         scaleX = sx
         scaleY = sy
     }
@@ -379,12 +368,10 @@ class GLText {
         - Returns: the x/y scale currently used for scale
      */
     func getScaleX() -> Float {
-        
         return scaleX
     }
     
     func getScaleY() -> Float {
-        
         return scaleY
     }
     
@@ -395,8 +382,7 @@ class GLText {
         - Parameters:
         - space: space for x axis spacing
      */
-    func setSpace(space: Float) {
-        
+    func setSpace(_ space: Float) {
         spaceX = space
     }
     
@@ -407,7 +393,6 @@ class GLText {
         - Returns: the x/y space currently used for scale
      */
     func getSpace() -> Float {
-        
         return spaceX
     }
     
@@ -419,14 +404,13 @@ class GLText {
         - text:    the string to get length for
         - Returns: the length of the specified string (pixels)
      */
-    func getLength(text: String) -> Float {
-        
+    func getLength(_ text: String) -> Float {
         var len: Float = 0.0
         let strLen = text.characters.count
         
         let text1 = text as NSString
         for i in 0..<strLen {
-            let c = Int(text1.characterAtIndex(i)) - GLText.CHAR_START
+            let c = Int(text1.character(at: i)) - GLText.CHAR_START
             len += (charWidths[c] * scaleX)
         }
         
@@ -444,19 +428,16 @@ class GLText {
         - chr:     the character to get width for
         - Returns: the requested character size (scaled)
      */
-    func getCharWidth(chr: Int) -> Float {
-        
+    func getCharWidth(_ chr: Int) -> Float {
         let c = chr - GLText.CHAR_START
         return charWidths[c] * scaleX
     }
     
     func getCharWidthMax() -> Float {
-        
         return charWidthMax * scaleX
     }
     
     func getCharHeight() -> Float {
-        
         return charHeight * scaleY
     }
     
@@ -467,17 +448,14 @@ class GLText {
         - Returns: the requested font metric (scaled)
      */
     func getAscent() -> Float {
-        
         return fontAscent * scaleY
     }
     
     func getDescent() -> Float {
-        
         return fontDescent * scaleY
     }
     
     func getHeight() -> Float {
-        
         return fontHeight * scaleY
     }
     
@@ -490,8 +468,7 @@ class GLText {
                       to draw the texture to the top-left corner.
         - vpMatrix:      View and projection matrix to use
      */
-    func drawTexture(width: Int, _ height: Int, _ vpMatrix: GLKMatrix4) {
-        
+    func drawTexture(_ width: Int, _ height: Int, _ vpMatrix: GLKMatrix4) {
         initDraw(1.0, 1.0, 1.0, 1.0)
     
         batch!.beginBatch(vpMatrix)
@@ -507,7 +484,6 @@ class GLText {
         Cleanup any resources.
      */
     func cleanUp() {
-        
         if let texInfo = textureInfo {
             var name = texInfo.name
             glDeleteTextures(1, &name)
@@ -522,8 +498,7 @@ class GLText {
     
     // MARK: Private functions -----------------------------------------------------------
     
-    private func initDraw(red: Float, _ green: Float, _ blue: Float, _ alpha: Float) {
-        
+    fileprivate func initDraw(_ red: Float, _ green: Float, _ blue: Float, _ alpha: Float) {
         glUseProgram(mProgram!.getHandle())
     
         var color: [GLfloat] = [ red, green, blue, alpha ]
@@ -536,16 +511,19 @@ class GLText {
         glUniform1i(mTextureUniformHandle, 0)
     }
     
-    private func drawChar(context: CGContextRef, _ fontRef: CTFontRef, _ char: String,  _ x: CGFloat, _ y: CGFloat) {
+    fileprivate func drawChar(_ context: CGContext, _ fontRef: CTFont, _ ch: String,  _ x: CGFloat, _ y: CGFloat) {
+        var glyph = Array<CGGlyph>(repeating: 0, count: 1)
+        var char = [UniChar](ch.utf16)
         
-        var glyph = Array<CGGlyph>(count: 1, repeatedValue: 0)
-        var char = [UniChar](char.utf16)
         CTFontGetGlyphsForCharacters(fontRef, &char, &glyph, 1)
         
-        var glyphTransform = CGAffineTransformMake(1, 0, 0, -1, x, y)
+        var glyphTransform = CGAffineTransform(a: 1, b: 0, c: 0, d: -1, tx: x, ty: y)
         
         let path = CTFontCreatePathForGlyph(fontRef, glyph[0], &glyphTransform)
-        CGContextAddPath(context, path)
-        CGContextFillPath(context)
+        
+        if path != nil {
+            context.addPath(path!)
+            context.fillPath()
+        }
     }
 }

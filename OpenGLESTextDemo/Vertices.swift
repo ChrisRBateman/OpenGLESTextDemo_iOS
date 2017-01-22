@@ -18,31 +18,30 @@ class Vertices {
     static let NORMAL_CNT = 3
     static let MVP_MATRIX_INDEX_CNT = 1
     
-    private var positionCnt: Int = 0
-    private var vertexStride: Int = 0
-    private var vertexSize: Int = 0
+    fileprivate var positionCnt: Int = 0
+    fileprivate var vertexStride: Int = 0
+    fileprivate var vertexSize: Int = 0
     
-    private var numVertices = 0
-    private var numIndices = 0
+    fileprivate var numVertices = 0
+    fileprivate var numIndices = 0
     
-    private var vertices: [Float] = []
-    private var indices: [GLushort] = []
+    fileprivate var vertices: [Float] = []
+    fileprivate var indices: [GLushort] = []
     
-    private var mTextureCoordinateHandle: Int = 0
-    private var mPositionHandle: Int = 0
-    private var mMVPIndexHandle: Int = 0
+    fileprivate var mTextureCoordinateHandle: Int = 0
+    fileprivate var mPositionHandle: Int = 0
+    fileprivate var mMVPIndexHandle: Int = 0
     
     var vertexArray: GLuint = 0
     var vertexBuffer: GLuint = 0
     var indexBuffer: GLuint = 0
     
     init(_ maxVertices: Int, _ maxIndices: Int) {
-        
         positionCnt = Vertices.POSITION_CNT_2D
         vertexStride = positionCnt + Vertices.TEXCOORD_CNT + Vertices.MVP_MATRIX_INDEX_CNT
         vertexSize = vertexStride * 4
         
-        vertices = Array<Float>(count: (maxVertices * vertexSize) / sizeof(Float), repeatedValue: 0)
+        vertices = Array<Float>(repeating: 0, count: (maxVertices * vertexSize) / MemoryLayout<Float>.size)
         
         mTextureCoordinateHandle = AttribVariable.A_TexCoordinate.getHandle()
         mPositionHandle = AttribVariable.A_Position.getHandle()
@@ -60,8 +59,7 @@ class Vertices {
         - length:   number of floats in the vertex array (total)
                     for easy setting use: vtx_cnt * (this.vertexSize / 4)
      */
-    func setVertices(vertices: [Float], _ offset: Int, _ length: Int) {
-        
+    func setVertices(_ vertices: [Float], _ offset: Int, _ length: Int) {
         self.vertices.removeAll()
         self.vertices += vertices[offset..<(offset + length)]
         numVertices = length
@@ -77,8 +75,7 @@ class Vertices {
         - length:  number of indices in array (from offset)
                    for easy setting use: vtx_cnt * (this.vertexSize / 4)
      */
-    func setIndices(indices: [GLushort], _ offset: Int, _ length: Int) {
-        
+    func setIndices(_ indices: [GLushort], _ offset: Int, _ length: Int) {
         self.indices.removeAll()
         self.indices += indices[offset..<(offset + length)]
         numIndices = length
@@ -88,7 +85,6 @@ class Vertices {
         Set up vertex and index buffer objects.
      */
     func setupData() {
-        
         glGenVertexArraysOES(1, &vertexArray)
         glBindVertexArrayOES(vertexArray)
         
@@ -97,11 +93,11 @@ class Vertices {
         
         if vertexBuffer > 0 && indexBuffer > 0 {
             glBindBuffer(GLenum(GL_ARRAY_BUFFER), vertexBuffer)
-            glBufferData(GLenum(GL_ARRAY_BUFFER), GLsizeiptr(sizeof(GLfloat) * vertices.count), nil,
+            glBufferData(GLenum(GL_ARRAY_BUFFER), GLsizeiptr(MemoryLayout<GLfloat>.size * vertices.count), nil,
                          GLenum(GL_DYNAMIC_DRAW))
             
             glBindBuffer(GLenum(GL_ELEMENT_ARRAY_BUFFER), indexBuffer)
-            glBufferData(GLenum(GL_ELEMENT_ARRAY_BUFFER), GLsizeiptr(sizeof(GLushort) * indices.count), indices,
+            glBufferData(GLenum(GL_ELEMENT_ARRAY_BUFFER), GLsizeiptr(MemoryLayout<GLushort>.size * indices.count), indices,
                          GLenum(GL_STATIC_DRAW))
             
             // bind vertex position pointer
@@ -127,7 +123,6 @@ class Vertices {
     }
     
     func cleanUp() {
-        
         if vertexBuffer > 0 {
             glDeleteBuffers(1, &vertexBuffer)
             vertexBuffer = 0
@@ -150,13 +145,12 @@ class Vertices {
         USAGE: call once before calling draw() multiple times for this buffer.
      */
     func bind() {
-        
         glBindVertexArrayOES(vertexArray)
         
         glBindBuffer(GLenum(GL_ARRAY_BUFFER), vertexBuffer)
         
         // vertices could change every frame so update the gpu memory.
-        glBufferSubData(GLenum(GL_ARRAY_BUFFER), 0, GLsizeiptr(sizeof(GLfloat) * numVertices) , vertices)
+        glBufferSubData(GLenum(GL_ARRAY_BUFFER), 0, GLsizeiptr(MemoryLayout<GLfloat>.size * numVertices) , vertices)
     }
     
     /**
@@ -169,8 +163,7 @@ class Vertices {
         - offset:        the offset in the vertex/index buffer to start at
         - numVertices:   the number of vertices (indices) to draw
      */
-    func draw(primitiveType: Int, _ offset: Int, _ numVertices: Int) {
-        
+    func draw(_ primitiveType: Int, _ offset: Int, _ numVertices: Int) {
         if indices.count > 0 {
             glBindBuffer(GLenum(GL_ELEMENT_ARRAY_BUFFER), indexBuffer)
             glDrawElements(GLenum(primitiveType), GLsizei(numVertices), GLenum(GL_UNSIGNED_SHORT), BUFFER_OFFSET(offset))

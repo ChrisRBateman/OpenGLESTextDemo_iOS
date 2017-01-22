@@ -10,13 +10,13 @@ import GLKit
 
 class BatchTextProgram : Program {
     
-    private let programVariables: [AttribVariable] = [
+    fileprivate let programVariables: [AttribVariable] = [
         AttribVariable.A_Position,
         AttribVariable.A_TexCoordinate,
         AttribVariable.A_MVPMatrixIndex
     ]
     
-    private let vertexShaderCode =
+    fileprivate let vertexShaderCode =
         "uniform mat4 u_MVPMatrix[24];      \n"
       + "attribute float a_MVPMatrixIndex;  \n"
       + "attribute vec4 a_Position;         \n"
@@ -31,7 +31,7 @@ class BatchTextProgram : Program {
       + "}                              \n";
     
     
-    private let fragmentShaderCode =
+    fileprivate let fragmentShaderCode =
         "uniform sampler2D u_Texture;       \n"
       + "precision mediump float;           \n"
     
@@ -44,7 +44,6 @@ class BatchTextProgram : Program {
       + "}                                  \n";
     
     override func initialize() {
-        
         initialize(vertexShaderCode, fragmentShaderCode, programVariables)
     }
 }

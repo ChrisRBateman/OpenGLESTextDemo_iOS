@@ -14,22 +14,19 @@ struct AttribVariable {
     static let A_TexCoordinate = AttribVariable(2, "a_TexCoordinate")
     static let A_MVPMatrixIndex = AttribVariable(3, "a_MVPMatrixIndex")
     
-    private var mHandle: Int
-    private var mName: String
+    fileprivate var mHandle: Int
+    fileprivate var mName: String
     
     init(_ handle: Int, _ name: String) {
-        
         mHandle = handle
         mName = name
     }
     
     func getHandle() -> Int {
-        
         return mHandle
     }
     
     func getName() -> String {
-        
         return mName
     }
 }

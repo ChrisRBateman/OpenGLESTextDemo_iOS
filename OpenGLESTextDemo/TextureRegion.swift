@@ -22,7 +22,6 @@ class TextureRegion {
         - width, height:       the width and height of the region on the texture (in pixels)
      */
     init(_ texWidth: Float, _ texHeight: Float, _ x: Float, _ y: Float, _ width: Float, _ height: Float) {
-        
         u1 = x / texWidth
         v1 = y / texHeight
         u2 = u1 + (width / texWidth)
